@@ -65,15 +65,32 @@ export const signal = (atom: AnyAtom, scope?: Scope): string => {
   return getSignal(store, atom) as Signal & string;
 };
 
+const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
+  const [state, setState] = useState(list);
+  const listChanged =
+    list.length !== state.length ||
+    list.some((arg, index) => !compareFn(arg, state[index]));
+  if (listChanged) {
+    // schedule update, triggers re-render
+    setState(list);
+  }
+  return listChanged ? list : state;
+};
+
 const Rerenderer = ({
-  subscribe,
+  subs,
   render,
 }: {
-  subscribe: Subscribe;
+  subs: Subscribe[];
   render: () => ReactNode;
 }): ReactNode => {
   const [, setRevision] = useState(0);
-  useEffect(() => subscribe(() => setRevision((r) => r + 1)), [subscribe]);
+  const memoedSubs = useMemoList(subs);
+  useEffect(() => {
+    const callback = () => setRevision((r) => r + 1);
+    const unsubs = memoedSubs.map((sub) => sub(callback));
+    return () => unsubs.forEach((unsub) => unsub());
+  }, [memoedSubs]);
   return render();
 };
 
@@ -87,12 +104,8 @@ export const createElement = ((type: any, props?: any, ...children: any[]) => {
   }
   const getChildren = () =>
     children.map((child) => (isSignal(child) ? child[SIGNAL].read() : child));
-  const subscribe: Subscribe = (callback) => {
-    const unsubs = subsInChildren.map((sub) => sub(callback));
-    return () => unsubs.forEach((unsub) => unsub());
-  };
   return createElementOrig(Rerenderer as any, {
-    subscribe,
+    subs: subsInChildren,
     render: () => createElementOrig(type, props, ...getChildren()),
   });
 }) as typeof createElementOrig;
