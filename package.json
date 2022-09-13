@@ -1,7 +1,7 @@
 {
   "name": "jotai-signal",
   "description": "👻🚩",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "Daishi Kato",
   "repository": {
     "type": "git",
@@ -36,7 +36,7 @@
     "compile:index": "microbundle build -f modern,umd --globals react=React",
     "postcompile:index": "cp dist/index.modern.mjs dist/index.modern.js && cp dist/index.modern.mjs.map dist/index.modern.js.map",
     "compile:jsx-runtime": "microbundle build src/jsx-runtime.ts -o dist/jsx-runtime/index.js --external jotai-signal -f modern,umd --globals react=React",
-    "postcompile:jsx-runtime": "cp dist/jsx-runtime/index.modern.mjs dist/jsx-runtime/index.modern.js && cp dist/jsx-runtime/index.modern.mjs.map dist/jsx-runtime/index.modern.js.map && cp dist/src/jsx-runtime.d.ts dist/jsx-runtime/index.umd.d.ts && cp dist/src/jsx-runtime.d.ts dist/jsx-runtime/index.modern.d.ts",
+    "postcompile:jsx-runtime": "cp dist/jsx-runtime/index.modern.mjs dist/jsx-runtime/index.modern.js && cp dist/jsx-runtime/index.modern.mjs.map dist/jsx-runtime/index.modern.js.map && cp dist/src/jsx-runtime.d.ts dist/jsx-runtime.d.ts",
     "test": "run-s eslint tsc-test jest",
     "eslint": "eslint --ext .js,.ts,.tsx .",
     "jest": "jest",
