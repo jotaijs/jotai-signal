@@ -18,6 +18,12 @@
       "module": "./dist/index.modern.js",
       "import": "./dist/index.modern.mjs",
       "default": "./dist/index.umd.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/src/jsx-runtime.d.ts",
+      "module": "./dist/jsx-runtime/index.modern.js",
+      "import": "./dist/jsx-runtime/index.modern.mjs",
+      "default": "./dist/jsx-runtime/index.umd.js"
     }
   },
   "sideEffects": false,
@@ -26,8 +32,11 @@
     "dist"
   ],
   "scripts": {
-    "compile": "microbundle build -f modern,umd --globals react=React",
-    "postcompile": "cp dist/index.modern.mjs dist/index.modern.js && cp dist/index.modern.mjs.map dist/index.modern.js.map",
+    "compile": "run-s compile:index compile:jsx-runtime",
+    "compile:index": "microbundle build -f modern,umd --globals react=React",
+    "postcompile:index": "cp dist/index.modern.mjs dist/index.modern.js && cp dist/index.modern.mjs.map dist/index.modern.js.map",
+    "compile:jsx-runtime": "microbundle build src/jsx-runtime.ts -o dist/jsx-runtime/index.js --external jotai-signal -f modern,umd --globals react=React",
+    "postcompile:jsx-runtime": "cp dist/jsx-runtime/index.modern.mjs dist/jsx-runtime/index.modern.js && cp dist/jsx-runtime/index.modern.mjs.map dist/jsx-runtime/index.modern.js.map",
     "test": "run-s eslint tsc-test jest",
     "eslint": "eslint --ext .js,.ts,.tsx .",
     "jest": "jest",

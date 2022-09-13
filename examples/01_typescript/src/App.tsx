@@ -1,9 +1,7 @@
-/** @jsx createElement */
-/** @jsxFrag Fragment */
+/** @jsxImportSource jotai-signal */
 
-import { Fragment } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { createElement, signal } from 'jotai-signal';
+import { signal } from 'jotai-signal';
 
 const countAtom = atom(0);
 

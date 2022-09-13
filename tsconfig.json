@@ -14,7 +14,8 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "jotai-signal": ["./src"]
+      "jotai-signal": ["./src"],
+      "jotai-signal/jsx-runtime": ["./src/jsx-runtime"]
     },
     "outDir": "./dist"
   }
