@@ -10,7 +10,7 @@ const CounterWithSignal = () => {
     <div>
       <h1>With signal(atom)</h1>
       <div style={{ position: 'relative', left: signal(countAtom) }}>
-        Count: {signal(countAtom)} ({Math.random()})
+        Random: {Math.random()}
       </div>
     </div>
   );
@@ -22,7 +22,7 @@ const Counter = () => {
     <div>
       <h1>With useAtom(atom)</h1>
       <div style={{ position: 'relative', left: count }}>
-        Count: {count} ({Math.random()})
+        Random: {Math.random()}
       </div>
     </div>
   );

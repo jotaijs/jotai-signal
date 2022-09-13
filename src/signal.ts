@@ -153,7 +153,7 @@ export const createElement = ((type: any, props?: any, ...children: any[]) => {
         )
       : children;
   const getProps = () =>
-    subsInChildren.length ? fillAllSignalValues(props) : props;
+    subsInProps.length ? fillAllSignalValues(props) : props;
   return createElementOrig(Rerenderer as any, {
     subs: [...subsInChildren, ...subsInProps],
     render: () => createElementOrig(type, getProps(), ...getChildren()),
