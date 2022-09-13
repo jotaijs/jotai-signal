@@ -1,7 +1,7 @@
 {
   "name": "jotai-signal",
   "description": "👻🚩",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "author": "Daishi Kato",
   "repository": {
     "type": "git",
@@ -35,7 +35,8 @@
   "sideEffects": false,
   "files": [
     "src",
-    "dist"
+    "dist",
+    "jsx-runtime.d.ts"
   ],
   "scripts": {
     "compile": "run-s compile:index compile:jsx-runtime",
