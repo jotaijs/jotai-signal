@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "esModuleInterop": true,
+    "downlevelIteration": true,
+    "module": "es2015",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "allowJs": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "jotai-signal": ["./src"]
+    },
+    "outDir": "./dist"
+  }
+}
