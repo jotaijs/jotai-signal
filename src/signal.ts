@@ -17,17 +17,19 @@ const READ_ATOM = 'r';
 const SUBSCRIBE_ATOM = 's';
 
 const SIGNAL = Symbol();
-type Subscribe = (callback: () => void) => () => void;
+type Unsubscribe = () => void;
+type Subscribe = (callback: () => void) => Unsubscribe;
 type Signal = {
   [SIGNAL]: {
     read: () => unknown;
     sub: Subscribe;
   };
 };
-const isSignal = (x: unknown): x is Signal => !!(x && (x as any)[SIGNAL]);
+const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
 // Limitations:
 //   - atom and scope(store) can't be dynamic.
+//   - does not (yet?) work with async atoms.
 export const signal = (atom: AnyAtom, scope?: Scope): string => {
   const ScopeContext = getScopeContext(scope);
   const { s: store } = use(ScopeContext);
