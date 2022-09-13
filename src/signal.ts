@@ -94,18 +94,68 @@ const Rerenderer = ({
   return render();
 };
 
+const findAllSignalSubs = (x: unknown): Subscribe[] => {
+  if (isSignal(x)) {
+    return [x[SIGNAL].sub];
+  }
+  if (Array.isArray(x)) {
+    return x.flatMap(findAllSignalSubs);
+  }
+  if (typeof x === 'object' && x !== null) {
+    return Object.values(x).flatMap(findAllSignalSubs);
+  }
+  return [];
+};
+
+const fillAllSignalValues = <T>(x: T): T => {
+  if (isSignal(x)) {
+    return x[SIGNAL].read() as T;
+  }
+  if (Array.isArray(x)) {
+    let changed = false;
+    const x2 = x.map((item) => {
+      const item2 = fillAllSignalValues(item);
+      if (item !== item2) {
+        changed = true; // HACK side effect
+      }
+      return item2;
+    });
+    return changed ? (x2 as typeof x) : x;
+  }
+  if (typeof x === 'object' && x !== null) {
+    let changed = false;
+    const x2 = Object.fromEntries(
+      Object.entries(x).map(([key, value]) => {
+        const value2 = fillAllSignalValues(value);
+        if (value !== value2) {
+          changed = true; // HACK side effect
+        }
+        return [key, value2];
+      }),
+    );
+    return changed ? (x2 as typeof x) : x;
+  }
+  return x;
+};
+
 export const createElement = ((type: any, props?: any, ...children: any[]) => {
-  // TODO patch props
   const subsInChildren = children.flatMap((child) =>
     isSignal(child) ? [child[SIGNAL].sub] : [],
   );
-  if (!subsInChildren.length) {
+  const subsInProps = findAllSignalSubs(props);
+  if (!subsInChildren.length && !subsInProps.length) {
     return createElementOrig(type, props, ...children);
   }
   const getChildren = () =>
-    children.map((child) => (isSignal(child) ? child[SIGNAL].read() : child));
+    subsInChildren.length
+      ? children.map((child) =>
+          isSignal(child) ? child[SIGNAL].read() : child,
+        )
+      : children;
+  const getProps = () =>
+    subsInChildren.length ? fillAllSignalValues(props) : props;
   return createElementOrig(Rerenderer as any, {
-    subs: subsInChildren,
-    render: () => createElementOrig(type, props, ...getChildren()),
+    subs: [...subsInChildren, ...subsInProps],
+    render: () => createElementOrig(type, getProps(), ...getChildren()),
   });
 }) as typeof createElementOrig;
