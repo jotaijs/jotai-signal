@@ -12,7 +12,7 @@ import type { Atom } from 'jotai';
 
 type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
 
-type AnyAtom = Atom<unknown>;
+type DisplayableAtom = Atom<string | number>;
 type Scope = NonNullable<Parameters<typeof getScopeContext>[0]>;
 type Store = ExtractContextValue<ReturnType<typeof getScopeContext>>['s'];
 
@@ -31,8 +31,8 @@ type Signal = {
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
-const signalCache = new WeakMap<Store, WeakMap<AnyAtom, Signal>>();
-const getSignal = (store: Store, atom: AnyAtom): Signal => {
+const signalCache = new WeakMap<Store, WeakMap<DisplayableAtom, Signal>>();
+const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   let atomSignalCache = signalCache.get(store);
   if (!atomSignalCache) {
     atomSignalCache = new WeakMap();
@@ -59,7 +59,7 @@ const getSignal = (store: Store, atom: AnyAtom): Signal => {
 
 // Limitations:
 //   - does not (yet?) work with async atoms.
-export const signal = (atom: AnyAtom, scope?: Scope): string => {
+export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
   const ScopeContext = getScopeContext(scope);
   const { s: store } = use(ScopeContext);
   return getSignal(store, atom) as Signal & string; // HACK lie type
