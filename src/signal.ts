@@ -64,8 +64,6 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   return signal as Signal;
 };
 
-// Limitations:
-//   - does not (yet?) work with async atoms.
 export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
   const ScopeContext = getScopeContext(scope);
   const { s: store } = use(ScopeContext);
