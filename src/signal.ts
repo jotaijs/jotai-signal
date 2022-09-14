@@ -27,7 +27,7 @@ type Signal = {
     read: () => unknown;
     sub: Subscribe;
   };
-  toString: () => string;
+  THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
@@ -50,7 +50,7 @@ const getSignal = (store: Store, atom: AnyAtom): Signal => {
     const sub: Subscribe = (callback) => store[SUBSCRIBE_ATOM](atom, callback);
     signal = {
       [SIGNAL]: { read, sub },
-      toString: () => String(read()),
+      THIS_IS_A_SIGNAL: true,
     };
     atomSignalCache.set(atom, signal);
   }
@@ -62,7 +62,7 @@ const getSignal = (store: Store, atom: AnyAtom): Signal => {
 export const signal = (atom: AnyAtom, scope?: Scope): string => {
   const ScopeContext = getScopeContext(scope);
   const { s: store } = use(ScopeContext);
-  return getSignal(store, atom) as Signal & string;
+  return getSignal(store, atom) as Signal & string; // HACK lie type
 };
 
 const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
