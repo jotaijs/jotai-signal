@@ -69,7 +69,7 @@ const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
   const [state, setState] = useState(list);
   const listChanged =
     list.length !== state.length ||
-    list.some((arg, index) => !compareFn(arg, state[index]));
+    list.some((arg, index) => !compareFn(arg, state[index] as T));
   if (listChanged) {
     // schedule update, triggers re-render
     setState(list);
