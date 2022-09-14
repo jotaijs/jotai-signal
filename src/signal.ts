@@ -12,7 +12,8 @@ import type { Atom } from 'jotai';
 
 type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
 
-type DisplayableAtom = Atom<string | number>;
+type Displayable = string | number;
+type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Scope = NonNullable<Parameters<typeof getScopeContext>[0]>;
 type Store = ExtractContextValue<ReturnType<typeof getScopeContext>>['s'];
 
@@ -24,7 +25,7 @@ type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
 type Signal = {
   [SIGNAL]: {
-    read: () => unknown;
+    read: () => Displayable;
     sub: Subscribe;
   };
   THIS_IS_A_SIGNAL?: true;
@@ -42,6 +43,12 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   if (!signal) {
     const read = () => {
       const atomState = store[READ_ATOM](atom);
+      if ('e' in atomState) {
+        throw atomState.e; // read error
+      }
+      if ('p' in atomState) {
+        use(atomState.p); // read promise
+      }
       if ('v' in atomState) {
         return atomState.v;
       }
