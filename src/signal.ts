@@ -47,7 +47,7 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
         throw atomState.e; // read error
       }
       if ('p' in atomState) {
-        use(atomState.p); // read promise
+        return use(atomState.p); // read promise
       }
       if ('v' in atomState) {
         return atomState.v;
@@ -66,7 +66,7 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
 
 export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
   const ScopeContext = getScopeContext(scope);
-  const { s: store } = use(ScopeContext);
+  const store: Store = use(ScopeContext).s;
   return getSignal(store, atom) as Signal & string; // HACK lie type
 };
 
