@@ -5,6 +5,7 @@ import {
   experimental_use as experimentalUse,
   useContext,
   useEffect,
+  useReducer,
   useState,
 } from 'react';
 import type { Context, ReactNode } from 'react';
@@ -26,24 +27,22 @@ if (!use) {
   };
 }
 
+const READ_ATOM = 'r';
+const SUBSCRIBE_ATOM = 's';
 type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
-
 type Displayable = string | number;
 type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Scope = NonNullable<Parameters<typeof getScopeContext>[0]>;
 type Store = ExtractContextValue<ReturnType<typeof getScopeContext>>['s'];
-
-const READ_ATOM = 'r';
-const SUBSCRIBE_ATOM = 's';
+type AtomState = ReturnType<Store[typeof READ_ATOM]>;
 
 const SIGNAL = Symbol();
+const SIGNAL_SUBSCRIBE = 0;
+const SIGNAL_ATOMSTATE = 1;
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
 type Signal = {
-  [SIGNAL]: {
-    read: () => Displayable;
-    sub: Subscribe;
-  };
+  [SIGNAL]: [subscribe: Subscribe, atomState: AtomState];
   THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
@@ -57,27 +56,41 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   }
   let signal = atomSignalCache.get(atom);
   if (!signal) {
-    const read = () => {
-      const atomState = store[READ_ATOM](atom);
-      if ('e' in atomState) {
-        throw atomState.e; // read error
-      }
-      if ('p' in atomState) {
-        return use(atomState.p) as never; // read promise
-      }
-      if ('v' in atomState) {
-        return atomState.v;
-      }
-      throw new Error('no atom value');
-    };
-    const sub: Subscribe = (callback) => store[SUBSCRIBE_ATOM](atom, callback);
+    const subscribe: Subscribe = (callback) =>
+      store[SUBSCRIBE_ATOM](atom, () => {
+        const prevAtomState = (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE];
+        const atomState = store[READ_ATOM](atom);
+        if (
+          'v' in atomState &&
+          'v' in prevAtomState &&
+          Object.is(atomState.v, prevAtomState.v)
+        ) {
+          // bail out
+          return;
+        }
+        (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE] = atomState;
+        callback();
+      });
     signal = {
-      [SIGNAL]: { read, sub },
+      [SIGNAL]: [subscribe, store[READ_ATOM](atom)],
       THIS_IS_A_SIGNAL: true,
     };
     atomSignalCache.set(atom, signal);
   }
   return signal as Signal;
+};
+const readSignal = (signal: Signal) => {
+  const atomState = signal[SIGNAL][SIGNAL_ATOMSTATE];
+  if ('e' in atomState) {
+    throw atomState.e; // read error
+  }
+  if ('p' in atomState) {
+    return use(atomState.p) as never; // read promise
+  }
+  if ('v' in atomState) {
+    return atomState.v;
+  }
+  throw new Error('no atom value');
 };
 
 export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
@@ -105,11 +118,10 @@ const Rerenderer = ({
   subs: Subscribe[];
   render: () => ReactNode;
 }): ReactNode => {
-  const [, setRevision] = useState(0);
+  const [, rerender] = useReducer((c) => c + 1, 0);
   const memoedSubs = useMemoList(subs);
   useEffect(() => {
-    const callback = () => setRevision((r) => r + 1);
-    const unsubs = memoedSubs.map((sub) => sub(callback));
+    const unsubs = memoedSubs.map((sub) => sub(rerender));
     return () => unsubs.forEach((unsub) => unsub());
   }, [memoedSubs]);
   return render();
@@ -117,7 +129,7 @@ const Rerenderer = ({
 
 const findAllSignalSubs = (x: unknown): Subscribe[] => {
   if (isSignal(x)) {
-    return [x[SIGNAL].sub];
+    return [x[SIGNAL][SIGNAL_SUBSCRIBE]];
   }
   if (Array.isArray(x)) {
     return x.flatMap(findAllSignalSubs);
@@ -130,7 +142,7 @@ const findAllSignalSubs = (x: unknown): Subscribe[] => {
 
 const fillAllSignalValues = <T>(x: T): T => {
   if (isSignal(x)) {
-    return x[SIGNAL].read() as T;
+    return readSignal(x) as T;
   }
   if (Array.isArray(x)) {
     let changed = false;
@@ -161,7 +173,7 @@ const fillAllSignalValues = <T>(x: T): T => {
 
 export const createElement = ((type: any, props?: any, ...children: any[]) => {
   const subsInChildren = children.flatMap((child) =>
-    isSignal(child) ? [child[SIGNAL].sub] : [],
+    isSignal(child) ? [child[SIGNAL][SIGNAL_SUBSCRIBE]] : [],
   );
   const subsInProps = findAllSignalSubs(props);
   if (!subsInChildren.length && !subsInProps.length) {
@@ -169,9 +181,7 @@ export const createElement = ((type: any, props?: any, ...children: any[]) => {
   }
   const getChildren = () =>
     subsInChildren.length
-      ? children.map((child) =>
-          isSignal(child) ? child[SIGNAL].read() : child,
-        )
+      ? children.map((child) => (isSignal(child) ? readSignal(child) : child))
       : children;
   const getProps = () =>
     subsInProps.length ? fillAllSignalValues(props) : props;
