@@ -1,14 +1,30 @@
+/// <reference types="react/experimental" />
+
 import {
   createElement as createElementOrig,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  experimental_use as use,
+  experimental_use as experimentalUse,
+  useContext,
   useEffect,
   useState,
 } from 'react';
 import type { Context, ReactNode } from 'react';
 import { SECRET_INTERNAL_getScopeContext as getScopeContext } from 'jotai';
 import type { Atom } from 'jotai';
+
+let use = experimentalUse;
+if (!use) {
+  // TODO this is a temporary workaround
+  // eslint-disable-next-line no-console
+  console.warn(
+    'experimental_use is not available. Falling back to useContext. It may not work as expected due to rules of hooks.',
+  );
+  use = (x: any) => {
+    if (x instanceof Promise) {
+      throw x;
+    }
+    return useContext(x);
+  };
+}
 
 type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
 
@@ -47,7 +63,7 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
         throw atomState.e; // read error
       }
       if ('p' in atomState) {
-        return use(atomState.p); // read promise
+        return use(atomState.p) as never; // read promise
       }
       if ('v' in atomState) {
         return atomState.v;
