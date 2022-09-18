@@ -11,8 +11,7 @@ const userAtom = atom(async (get) => {
   return `ID: ${data.id}, Name: ${data.first_name} ${data.last_name}`;
 });
 
-const createRandomColor = () =>
-  `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+const createRandomColor = () => `#${Math.random().toString(16).slice(-6)}`;
 
 const UserWithSignal = () => {
   return (
