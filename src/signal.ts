@@ -69,30 +69,30 @@ const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
 };
 
 const Rerenderer = ({
-  subs,
+  signals,
   render,
 }: {
-  subs: Subscribe[];
+  signals: Signal[];
   render: () => ReactNode;
 }): ReactNode => {
   const [, rerender] = useReducer((c) => c + 1, 0);
-  const memoedSubs = useMemoList(subs);
+  const memoedSignals = useMemoList(signals);
   useEffect(() => {
-    const unsubs = memoedSubs.map((sub) => sub(rerender));
+    const unsubs = memoedSignals.map((sig) => sig[SIGNAL].s(rerender));
     return () => unsubs.forEach((unsub) => unsub());
-  }, [memoedSubs]);
+  }, [memoedSignals]);
   return render();
 };
 
-const findAllSignalSubs = (x: unknown): Subscribe[] => {
+const findAllSignals = (x: unknown): Signal[] => {
   if (isSignal(x)) {
-    return [x[SIGNAL].s];
+    return [x];
   }
   if (Array.isArray(x)) {
-    return x.flatMap(findAllSignalSubs);
+    return x.flatMap(findAllSignals);
   }
   if (typeof x === 'object' && x !== null) {
-    return Object.values(x).flatMap(findAllSignalSubs);
+    return Object.values(x).flatMap(findAllSignals);
   }
   return [];
 };
@@ -129,21 +129,21 @@ const fillAllSignalValues = <T>(x: T): T => {
 };
 
 export const createElement = ((type: any, props?: any, ...children: any[]) => {
-  const subsInChildren = children.flatMap((child) =>
-    isSignal(child) ? [child[SIGNAL].s] : [],
+  const signalsInChildren = children.flatMap((child) =>
+    isSignal(child) ? [child] : [],
   );
-  const subsInProps = findAllSignalSubs(props);
-  if (!subsInChildren.length && !subsInProps.length) {
+  const signalsInProps = findAllSignals(props);
+  if (!signalsInChildren.length && !signalsInProps.length) {
     return createElementOrig(type, props, ...children);
   }
   const getChildren = () =>
-    subsInChildren.length
+    signalsInChildren.length
       ? children.map((child) => (isSignal(child) ? readSignal(child) : child))
       : children;
   const getProps = () =>
-    subsInProps.length ? fillAllSignalValues(props) : props;
+    signalsInProps.length ? fillAllSignalValues(props) : props;
   return createElementOrig(Rerenderer as any, {
-    subs: [...subsInChildren, ...subsInProps],
+    signals: [...signalsInChildren, ...signalsInProps],
     render: () => createElementOrig(type, getProps(), ...getChildren()),
   });
 }) as typeof createElementOrig;
