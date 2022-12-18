@@ -93,7 +93,7 @@
     "webpack-dev-server": "^4.11.1"
   },
   "peerDependencies": {
-    "jotai": "*",
-    "react": "experimental"
+    "jotai": ">=1.11.0",
+    "react": ">=17.0.0"
   }
 }

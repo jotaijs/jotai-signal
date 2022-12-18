@@ -1,6 +1,4 @@
-/// <reference types="react/experimental" />
-
-import ReactExports, {
+import {
   createElement as createElementOrig,
   useEffect,
   useReducer,
@@ -10,37 +8,6 @@ import type { ReactNode } from 'react';
 import { getDefaultStore } from 'jotai/vanilla';
 import type { Atom } from 'jotai/vanilla';
 
-const use =
-  ReactExports.use ||
-  (<T>(
-    promise: Promise<T> & {
-      status?: 'pending' | 'fulfilled' | 'rejected';
-      value?: T;
-      reason?: unknown;
-    },
-  ): T => {
-    if (promise.status === 'pending') {
-      throw promise;
-    } else if (promise.status === 'fulfilled') {
-      return promise.value as T;
-    } else if (promise.status === 'rejected') {
-      throw promise.reason;
-    } else {
-      promise.status = 'pending';
-      promise.then(
-        (v) => {
-          promise.status = 'fulfilled';
-          promise.value = v;
-        },
-        (e) => {
-          promise.status = 'rejected';
-          promise.reason = e;
-        },
-      );
-      throw promise;
-    }
-  });
-
 type Displayable = string | number;
 type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Store = ReturnType<typeof getDefaultStore>;
@@ -49,18 +16,15 @@ const SIGNAL = Symbol();
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
 type AtomValue = unknown;
-type AtomError = unknown;
+type Read = () => AtomValue;
 type Signal = {
-  [SIGNAL]: {
-    s: Subscribe;
-    v?: AtomValue;
-    e?: AtomError;
-  };
+  [SIGNAL]: { s: Subscribe; r: Read };
   THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
 const signalCache = new WeakMap<Store, WeakMap<DisplayableAtom, Signal>>();
+
 const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   let atomSignalCache = signalCache.get(store);
   if (!atomSignalCache) {
@@ -69,48 +33,20 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   }
   let signal = atomSignalCache.get(atom);
   if (!signal) {
-    const subscribe: Subscribe = (callback) =>
-      store.sub(atom, () => {
-        const signalState = (signal as Signal)[SIGNAL];
-        try {
-          const value = store.get(atom);
-          if ('v' in signalState && !Object.is(signalState.v, value)) {
-            signalState.v = value;
-            callback();
-          }
-        } catch (e) {
-          if ('e' in signalState && !Object.is(signalState.e, e)) {
-            signalState.v = e;
-            callback();
-          }
-        }
-      });
+    const subscribe: Subscribe = (callback) => store.sub(atom, callback);
+    const read: Read = () => store.get(atom);
     signal = {
-      [SIGNAL]: { s: subscribe },
+      [SIGNAL]: { s: subscribe, r: read },
       THIS_IS_A_SIGNAL: true,
     };
-    try {
-      const value = store.get(atom);
-      signal[SIGNAL].v = value;
-    } catch (e) {
-      signal[SIGNAL].e = e;
-    }
     atomSignalCache.set(atom, signal);
   }
-  return signal as Signal;
+  return signal;
 };
+
 const readSignal = (signal: Signal) => {
-  const signalState = signal[SIGNAL];
-  if ('e' in signalState) {
-    throw signalState.e; // read error
-  }
-  if ('v' in signalState) {
-    if (signalState.v instanceof Promise) {
-      return use(signalState.v) as never; // read promise
-    }
-    return signalState.v;
-  }
-  throw new Error('should not reach here');
+  const { r: read } = signal[SIGNAL];
+  return read();
 };
 
 export const signal = (
