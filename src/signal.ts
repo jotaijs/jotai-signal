@@ -1,48 +1,61 @@
 /// <reference types="react/experimental" />
 
-import {
+import ReactExports, {
   createElement as createElementOrig,
-  experimental_use as experimentalUse,
-  useContext,
   useEffect,
   useReducer,
   useState,
 } from 'react';
-import type { Context, ReactNode } from 'react';
-import { SECRET_INTERNAL_getScopeContext as getScopeContext } from 'jotai';
-import type { Atom } from 'jotai';
+import type { ReactNode } from 'react';
+import { getDefaultStore } from 'jotai/vanilla';
+import type { Atom } from 'jotai/vanilla';
 
-let use = experimentalUse;
-if (!use) {
-  // TODO this is a temporary workaround
-  // eslint-disable-next-line no-console
-  console.warn(
-    'experimental_use is not available. Falling back to useContext. It may not work as expected due to rules of hooks.',
-  );
-  use = (x: any) => {
-    if (x instanceof Promise) {
-      throw x;
+const use =
+  ReactExports.use ||
+  (<T>(
+    promise: Promise<T> & {
+      status?: 'pending' | 'fulfilled' | 'rejected';
+      value?: T;
+      reason?: unknown;
+    },
+  ): T => {
+    if (promise.status === 'pending') {
+      throw promise;
+    } else if (promise.status === 'fulfilled') {
+      return promise.value as T;
+    } else if (promise.status === 'rejected') {
+      throw promise.reason;
+    } else {
+      promise.status = 'pending';
+      promise.then(
+        (v) => {
+          promise.status = 'fulfilled';
+          promise.value = v;
+        },
+        (e) => {
+          promise.status = 'rejected';
+          promise.reason = e;
+        },
+      );
+      throw promise;
     }
-    return useContext(x);
-  };
-}
+  });
 
-const READ_ATOM = 'r';
-const SUBSCRIBE_ATOM = 's';
-type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
 type Displayable = string | number;
 type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
-type Scope = NonNullable<Parameters<typeof getScopeContext>[0]>;
-type Store = ExtractContextValue<ReturnType<typeof getScopeContext>>['s'];
-type AtomState = ReturnType<Store[typeof READ_ATOM]>;
+type Store = ReturnType<typeof getDefaultStore>;
 
 const SIGNAL = Symbol();
-const SIGNAL_SUBSCRIBE = 0;
-const SIGNAL_ATOMSTATE = 1;
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
+type AtomValue = unknown;
+type AtomError = unknown;
 type Signal = {
-  [SIGNAL]: [subscribe: Subscribe, atomState: AtomState];
+  [SIGNAL]: {
+    s: Subscribe;
+    v?: AtomValue;
+    e?: AtomError;
+  };
   THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
@@ -57,45 +70,53 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   let signal = atomSignalCache.get(atom);
   if (!signal) {
     const subscribe: Subscribe = (callback) =>
-      store[SUBSCRIBE_ATOM](atom, () => {
-        const prevAtomState = (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE];
-        const atomState = store[READ_ATOM](atom);
-        if (
-          'v' in atomState &&
-          'v' in prevAtomState &&
-          Object.is(atomState.v, prevAtomState.v)
-        ) {
-          // bail out
-          return;
+      store.sub(atom, () => {
+        const signalState = (signal as Signal)[SIGNAL];
+        try {
+          const value = store.get(atom);
+          if ('v' in signalState && !Object.is(signalState.v, value)) {
+            signalState.v = value;
+            callback();
+          }
+        } catch (e) {
+          if ('e' in signalState && !Object.is(signalState.e, e)) {
+            signalState.v = e;
+            callback();
+          }
         }
-        (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE] = atomState;
-        callback();
       });
     signal = {
-      [SIGNAL]: [subscribe, store[READ_ATOM](atom)],
+      [SIGNAL]: { s: subscribe },
       THIS_IS_A_SIGNAL: true,
     };
+    try {
+      const value = store.get(atom);
+      signal[SIGNAL].v = value;
+    } catch (e) {
+      signal[SIGNAL].e = e;
+    }
     atomSignalCache.set(atom, signal);
   }
   return signal as Signal;
 };
 const readSignal = (signal: Signal) => {
-  const atomState = signal[SIGNAL][SIGNAL_ATOMSTATE];
-  if ('e' in atomState) {
-    throw atomState.e; // read error
+  const signalState = signal[SIGNAL];
+  if ('e' in signalState) {
+    throw signalState.e; // read error
   }
-  if ('p' in atomState) {
-    return use(atomState.p) as never; // read promise
+  if ('v' in signalState) {
+    if (signalState.v instanceof Promise) {
+      return use(signalState.v) as never; // read promise
+    }
+    return signalState.v;
   }
-  if ('v' in atomState) {
-    return atomState.v;
-  }
-  throw new Error('no atom value');
+  throw new Error('should not reach here');
 };
 
-export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
-  const ScopeContext = getScopeContext(scope);
-  const store: Store = use(ScopeContext).s;
+export const signal = (
+  atom: DisplayableAtom,
+  store = getDefaultStore(),
+): string => {
   return getSignal(store, atom) as Signal & string; // HACK lie type
 };
 
@@ -129,7 +150,7 @@ const Rerenderer = ({
 
 const findAllSignalSubs = (x: unknown): Subscribe[] => {
   if (isSignal(x)) {
-    return [x[SIGNAL][SIGNAL_SUBSCRIBE]];
+    return [x[SIGNAL].s];
   }
   if (Array.isArray(x)) {
     return x.flatMap(findAllSignalSubs);
@@ -173,7 +194,7 @@ const fillAllSignalValues = <T>(x: T): T => {
 
 export const createElement = ((type: any, props?: any, ...children: any[]) => {
   const subsInChildren = children.flatMap((child) =>
-    isSignal(child) ? [child[SIGNAL][SIGNAL_SUBSCRIBE]] : [],
+    isSignal(child) ? [child[SIGNAL].s] : [],
   );
   const subsInProps = findAllSignalSubs(props);
   if (!subsInChildren.length && !subsInProps.length) {
