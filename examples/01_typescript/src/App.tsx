@@ -1,6 +1,7 @@
 /** @jsxImportSource jotai-signal */
 
-import { atom, useAtom, useSetAtom } from 'jotai';
+import { atom } from 'jotai/vanilla';
+import { useAtom, useSetAtom } from 'jotai/react';
 import { signal } from 'jotai-signal';
 
 const countAtom = atom(0);
