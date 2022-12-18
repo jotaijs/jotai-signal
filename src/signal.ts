@@ -13,12 +13,8 @@ type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Store = ReturnType<typeof getDefaultStore>;
 
 const SIGNAL = Symbol();
-type Unsubscribe = () => void;
-type Subscribe = (callback: () => void) => Unsubscribe;
-type AtomValue = unknown;
-type Read = () => AtomValue;
 type Signal = {
-  [SIGNAL]: { s: Subscribe; r: Read };
+  [SIGNAL]: { s: Store; a: DisplayableAtom };
   THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
@@ -33,10 +29,8 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   }
   let signal = atomSignalCache.get(atom);
   if (!signal) {
-    const subscribe: Subscribe = (callback) => store.sub(atom, callback);
-    const read: Read = () => store.get(atom);
     signal = {
-      [SIGNAL]: { s: subscribe, r: read },
+      [SIGNAL]: { s: store, a: atom },
       THIS_IS_A_SIGNAL: true,
     };
     atomSignalCache.set(atom, signal);
@@ -44,9 +38,14 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   return signal;
 };
 
+const subscribeSignal = (signal: Signal, callback: () => void) => {
+  const { s: store, a: atom } = signal[SIGNAL];
+  return store.sub(atom, callback);
+};
+
 const readSignal = (signal: Signal) => {
-  const { r: read } = signal[SIGNAL];
-  return read();
+  const { s: store, a: atom } = signal[SIGNAL];
+  return store.get(atom);
 };
 
 export const signal = (
@@ -78,7 +77,7 @@ const Rerenderer = ({
   const [, rerender] = useReducer((c) => c + 1, 0);
   const memoedSignals = useMemoList(signals);
   useEffect(() => {
-    const unsubs = memoedSignals.map((sig) => sig[SIGNAL].s(rerender));
+    const unsubs = memoedSignals.map((sig) => subscribeSignal(sig, rerender));
     return () => unsubs.forEach((unsub) => unsub());
   }, [memoedSignals]);
   return render();
