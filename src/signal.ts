@@ -2,7 +2,7 @@
 
 import {
   createElement as createElementOrig,
-  experimental_use as experimentalUse,
+  use as experimentalUse,
   useContext,
   useEffect,
   useReducer,
@@ -23,7 +23,7 @@ if (!use) {
     if (x instanceof Promise) {
       throw x;
     }
-    return useContext(x);
+    return useContext(x) as any;
   };
 }
 
