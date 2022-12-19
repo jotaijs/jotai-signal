@@ -41,13 +41,11 @@ const use =
     }
   });
 
-type Displayable = string | number;
-type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Store = ReturnType<typeof getDefaultStore>;
 
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
-type Read = () => Displayable | Promise<Displayable>;
+type Read = () => unknown;
 
 const SIGNAL = Symbol('JOTAI_SIGNAL');
 type Signal = {
@@ -55,33 +53,36 @@ type Signal = {
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
-const signalCache = new WeakMap<Store, WeakMap<DisplayableAtom, Signal>>();
+const primitiveSignalCache = new WeakMap<
+  Store,
+  WeakMap<Atom<unknown>, Signal>
+>();
 
-const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
-  let atomSignalCache = signalCache.get(store);
+const getPrimitiveSignal = (store: Store, atom: Atom<unknown>): Signal => {
+  let atomSignalCache = primitiveSignalCache.get(store);
   if (!atomSignalCache) {
     atomSignalCache = new WeakMap();
-    signalCache.set(store, atomSignalCache);
+    primitiveSignalCache.set(store, atomSignalCache);
   }
-  let signal = atomSignalCache.get(atom);
-  if (!signal) {
+  let sig = atomSignalCache.get(atom);
+  if (!sig) {
     const subscribe: Subscribe = (callback) => store.sub(atom, callback);
     const read: Read = () => store.get(atom);
-    signal = {
+    sig = {
       [SIGNAL]: { s: subscribe, r: read },
     };
-    atomSignalCache.set(atom, signal);
+    atomSignalCache.set(atom, sig);
   }
-  return signal;
+  return sig;
 };
 
-const subscribeSignal = (signal: Signal, callback: () => void) => {
-  const { s: subscribe } = signal[SIGNAL];
+const subscribeSignal = (sig: Signal, callback: () => void) => {
+  const { s: subscribe } = sig[SIGNAL];
   return subscribe(callback);
 };
 
-const readSignal = (signal: Signal) => {
-  const { r: read } = signal[SIGNAL];
+const readSignal = (sig: Signal) => {
+  const { r: read } = sig[SIGNAL];
   const value = read();
   if (value instanceof Promise) {
     // HACK this could violate the rule of using `use`.
@@ -90,12 +91,13 @@ const readSignal = (signal: Signal) => {
   return value;
 };
 
-export const signal = (
-  atom: DisplayableAtom,
-  store = getDefaultStore(),
-): string => {
-  return getSignal(store, atom) as Signal & string; // HACK lie type
-};
+export function signal<T>(atom: Atom<Promise<T>>, store?: Store): T;
+
+export function signal<T>(atom: Atom<T>, store?: Store): T;
+
+export function signal<T>(atom: Atom<T>, store = getDefaultStore()) {
+  return getPrimitiveSignal(store, atom) as Signal & T; // HACK lie type
+}
 
 const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
   const [state, setState] = useState(list);
