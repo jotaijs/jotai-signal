@@ -1,4 +1,6 @@
-import {
+/// <reference types="react/experimental" />
+
+import ReactExports, {
   createElement as createElementOrig,
   useEffect,
   useReducer,
@@ -8,14 +10,44 @@ import type { ReactNode } from 'react';
 import { getDefaultStore } from 'jotai/vanilla';
 import type { Atom } from 'jotai/vanilla';
 
+const use =
+  ReactExports.use ||
+  (<T>(
+    promise: Promise<T> & {
+      status?: 'pending' | 'fulfilled' | 'rejected';
+      value?: T;
+      reason?: unknown;
+    },
+  ): T => {
+    if (promise.status === 'pending') {
+      throw promise;
+    } else if (promise.status === 'fulfilled') {
+      return promise.value as T;
+    } else if (promise.status === 'rejected') {
+      throw promise.reason;
+    } else {
+      promise.status = 'pending';
+      promise.then(
+        (v) => {
+          promise.status = 'fulfilled';
+          promise.value = v;
+        },
+        (e) => {
+          promise.status = 'rejected';
+          promise.reason = e;
+        },
+      );
+      throw promise;
+    }
+  });
+
 type Displayable = string | number;
 type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Store = ReturnType<typeof getDefaultStore>;
 
-const SIGNAL = Symbol();
+const SIGNAL = Symbol('JOTAI_SIGNAL');
 type Signal = {
   [SIGNAL]: { s: Store; a: DisplayableAtom };
-  THIS_IS_A_SIGNAL?: true;
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
@@ -31,7 +63,6 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   if (!signal) {
     signal = {
       [SIGNAL]: { s: store, a: atom },
-      THIS_IS_A_SIGNAL: true,
     };
     atomSignalCache.set(atom, signal);
   }
@@ -45,7 +76,12 @@ const subscribeSignal = (signal: Signal, callback: () => void) => {
 
 const readSignal = (signal: Signal) => {
   const { s: store, a: atom } = signal[SIGNAL];
-  return store.get(atom);
+  const value = store.get(atom);
+  if (value instanceof Promise) {
+    // HACK this could violate the rule of using `use`.
+    return use(value);
+  }
+  return value;
 };
 
 export const signal = (
