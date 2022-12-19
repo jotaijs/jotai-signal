@@ -53,24 +53,48 @@ type Signal = {
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
-const primitiveSignalCache = new WeakMap<
-  Store,
-  WeakMap<Atom<unknown>, Signal>
->();
+const createSignal = (subscribe: Subscribe, read: Read): Signal => {
+  const sig = new Proxy(
+    (() => {
+      // empty
+    }) as any,
+    {
+      get(_target, prop) {
+        if (prop === SIGNAL) {
+          return { s: subscribe, r: read };
+        }
+        return createSignal(subscribe, () => {
+          const obj = read() as any;
+          if (typeof obj[prop] === 'function') {
+            return obj[prop].bind(obj);
+          }
+          return obj[prop];
+        });
+      },
+      apply(_target, _thisArg, args) {
+        return createSignal(subscribe, () => {
+          const fn = read() as any;
+          return fn(...args);
+        });
+      },
+    },
+  );
+  return sig;
+};
 
-const getPrimitiveSignal = (store: Store, atom: Atom<unknown>): Signal => {
-  let atomSignalCache = primitiveSignalCache.get(store);
+const storeCacheCache = new WeakMap<Store, WeakMap<Atom<unknown>, Signal>>();
+
+const getAtomSignal = (store: Store, atom: Atom<unknown>): Signal => {
+  let atomSignalCache = storeCacheCache.get(store);
   if (!atomSignalCache) {
     atomSignalCache = new WeakMap();
-    primitiveSignalCache.set(store, atomSignalCache);
+    storeCacheCache.set(store, atomSignalCache);
   }
   let sig = atomSignalCache.get(atom);
   if (!sig) {
     const subscribe: Subscribe = (callback) => store.sub(atom, callback);
     const read: Read = () => store.get(atom);
-    sig = {
-      [SIGNAL]: { s: subscribe, r: read },
-    };
+    sig = createSignal(subscribe, read);
     atomSignalCache.set(atom, sig);
   }
   return sig;
@@ -96,7 +120,7 @@ export function signal<T>(atom: Atom<Promise<T>>, store?: Store): T;
 export function signal<T>(atom: Atom<T>, store?: Store): T;
 
 export function signal<T>(atom: Atom<T>, store = getDefaultStore()) {
-  return getPrimitiveSignal(store, atom) as Signal & T; // HACK lie type
+  return getAtomSignal(store, atom) as Signal & T; // HACK lie type
 }
 
 const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
