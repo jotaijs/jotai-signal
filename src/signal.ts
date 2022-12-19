@@ -45,9 +45,13 @@ type Displayable = string | number;
 type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
 type Store = ReturnType<typeof getDefaultStore>;
 
+type Unsubscribe = () => void;
+type Subscribe = (callback: () => void) => Unsubscribe;
+type Read = () => Displayable | Promise<Displayable>;
+
 const SIGNAL = Symbol('JOTAI_SIGNAL');
 type Signal = {
-  [SIGNAL]: { s: Store; a: DisplayableAtom };
+  [SIGNAL]: { s: Subscribe; r: Read };
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
@@ -61,8 +65,10 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
   }
   let signal = atomSignalCache.get(atom);
   if (!signal) {
+    const subscribe: Subscribe = (callback) => store.sub(atom, callback);
+    const read: Read = () => store.get(atom);
     signal = {
-      [SIGNAL]: { s: store, a: atom },
+      [SIGNAL]: { s: subscribe, r: read },
     };
     atomSignalCache.set(atom, signal);
   }
@@ -70,13 +76,13 @@ const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
 };
 
 const subscribeSignal = (signal: Signal, callback: () => void) => {
-  const { s: store, a: atom } = signal[SIGNAL];
-  return store.sub(atom, callback);
+  const { s: subscribe } = signal[SIGNAL];
+  return subscribe(callback);
 };
 
 const readSignal = (signal: Signal) => {
-  const { s: store, a: atom } = signal[SIGNAL];
-  const value = store.get(atom);
+  const { r: read } = signal[SIGNAL];
+  const value = read();
   if (value instanceof Promise) {
     // HACK this could violate the rule of using `use`.
     return use(value);
