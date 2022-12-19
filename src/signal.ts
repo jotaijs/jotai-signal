@@ -45,15 +45,15 @@ type Store = ReturnType<typeof getDefaultStore>;
 
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
-type Read = () => unknown;
+type GetValue = () => unknown;
 
 const SIGNAL = Symbol('JOTAI_SIGNAL');
 type Signal = {
-  [SIGNAL]: { s: Subscribe; r: Read };
+  [SIGNAL]: { sub: Subscribe; get: GetValue };
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
-const createSignal = (subscribe: Subscribe, read: Read): Signal => {
+const createSignal = (sub: Subscribe, get: GetValue): Signal => {
   const sig = new Proxy(
     (() => {
       // empty
@@ -61,10 +61,10 @@ const createSignal = (subscribe: Subscribe, read: Read): Signal => {
     {
       get(_target, prop) {
         if (prop === SIGNAL) {
-          return { s: subscribe, r: read };
+          return { sub, get };
         }
-        return createSignal(subscribe, () => {
-          const obj = read() as any;
+        return createSignal(sub, () => {
+          const obj = get() as any;
           if (typeof obj[prop] === 'function') {
             return obj[prop].bind(obj);
           }
@@ -72,8 +72,8 @@ const createSignal = (subscribe: Subscribe, read: Read): Signal => {
         });
       },
       apply(_target, _thisArg, args) {
-        return createSignal(subscribe, () => {
-          const fn = read() as any;
+        return createSignal(sub, () => {
+          const fn = get() as any;
           return fn(...args);
         });
       },
@@ -92,22 +92,20 @@ const getAtomSignal = (store: Store, atom: Atom<unknown>): Signal => {
   }
   let sig = atomSignalCache.get(atom);
   if (!sig) {
-    const subscribe: Subscribe = (callback) => store.sub(atom, callback);
-    const read: Read = () => store.get(atom);
-    sig = createSignal(subscribe, read);
+    const sub: Subscribe = (callback) => store.sub(atom, callback);
+    const get: GetValue = () => store.get(atom);
+    sig = createSignal(sub, get);
     atomSignalCache.set(atom, sig);
   }
   return sig;
 };
 
 const subscribeSignal = (sig: Signal, callback: () => void) => {
-  const { s: subscribe } = sig[SIGNAL];
-  return subscribe(callback);
+  return sig[SIGNAL].sub(callback);
 };
 
 const readSignal = (sig: Signal) => {
-  const { r: read } = sig[SIGNAL];
-  const value = read();
+  const value = sig[SIGNAL].get();
   if (value instanceof Promise) {
     // HACK this could violate the rule of using `use`.
     return use(value);
