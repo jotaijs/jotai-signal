@@ -1,7 +1,8 @@
 /** @jsxImportSource jotai-signal */
 
 import { Suspense } from 'react';
-import { atom, useAtom } from 'jotai';
+import { atom } from 'jotai/vanilla';
+import { useAtom } from 'jotai/react';
 import { signal } from 'jotai-signal';
 
 const idAtom = atom(1);

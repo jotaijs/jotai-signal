@@ -1,103 +1,125 @@
 /// <reference types="react/experimental" />
 
-import {
+import ReactExports, {
   createElement as createElementOrig,
-  use as experimentalUse,
-  useContext,
   useEffect,
   useReducer,
   useState,
 } from 'react';
-import type { Context, ReactNode } from 'react';
-import { SECRET_INTERNAL_getScopeContext as getScopeContext } from 'jotai';
-import type { Atom } from 'jotai';
+import type { ReactNode } from 'react';
+import { getDefaultStore } from 'jotai/vanilla';
+import type { Atom } from 'jotai/vanilla';
 
-let use = experimentalUse;
-if (!use) {
-  // TODO this is a temporary workaround
-  // eslint-disable-next-line no-console
-  console.warn(
-    'experimental_use is not available. Falling back to useContext. It may not work as expected due to rules of hooks.',
-  );
-  use = (x: any) => {
-    if (x instanceof Promise) {
-      throw x;
+const use =
+  ReactExports.use ||
+  (<T>(
+    promise: Promise<T> & {
+      status?: 'pending' | 'fulfilled' | 'rejected';
+      value?: T;
+      reason?: unknown;
+    },
+  ): T => {
+    if (promise.status === 'pending') {
+      throw promise;
+    } else if (promise.status === 'fulfilled') {
+      return promise.value as T;
+    } else if (promise.status === 'rejected') {
+      throw promise.reason;
+    } else {
+      promise.status = 'pending';
+      promise.then(
+        (v) => {
+          promise.status = 'fulfilled';
+          promise.value = v;
+        },
+        (e) => {
+          promise.status = 'rejected';
+          promise.reason = e;
+        },
+      );
+      throw promise;
     }
-    return useContext(x) as any;
-  };
-}
+  });
 
-const READ_ATOM = 'r';
-const SUBSCRIBE_ATOM = 's';
-type ExtractContextValue<T> = T extends Context<infer V> ? V : never;
-type Displayable = string | number;
-type DisplayableAtom = Atom<Displayable | Promise<Displayable>>;
-type Scope = NonNullable<Parameters<typeof getScopeContext>[0]>;
-type Store = ExtractContextValue<ReturnType<typeof getScopeContext>>['s'];
-type AtomState = ReturnType<Store[typeof READ_ATOM]>;
+type Store = ReturnType<typeof getDefaultStore>;
 
-const SIGNAL = Symbol();
-const SIGNAL_SUBSCRIBE = 0;
-const SIGNAL_ATOMSTATE = 1;
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
+type GetValue = () => unknown;
+
+const SIGNAL = Symbol('JOTAI_SIGNAL');
 type Signal = {
-  [SIGNAL]: [subscribe: Subscribe, atomState: AtomState];
-  THIS_IS_A_SIGNAL?: true;
+  [SIGNAL]: { sub: Subscribe; get: GetValue };
 };
 const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
 
-const signalCache = new WeakMap<Store, WeakMap<DisplayableAtom, Signal>>();
-const getSignal = (store: Store, atom: DisplayableAtom): Signal => {
-  let atomSignalCache = signalCache.get(store);
-  if (!atomSignalCache) {
-    atomSignalCache = new WeakMap();
-    signalCache.set(store, atomSignalCache);
-  }
-  let signal = atomSignalCache.get(atom);
-  if (!signal) {
-    const subscribe: Subscribe = (callback) =>
-      store[SUBSCRIBE_ATOM](atom, () => {
-        const prevAtomState = (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE];
-        const atomState = store[READ_ATOM](atom);
-        if (
-          'v' in atomState &&
-          'v' in prevAtomState &&
-          Object.is(atomState.v, prevAtomState.v)
-        ) {
-          // bail out
-          return;
+const createSignal = (sub: Subscribe, get: GetValue): Signal => {
+  const sig = new Proxy(
+    (() => {
+      // empty
+    }) as any,
+    {
+      get(_target, prop) {
+        if (prop === SIGNAL) {
+          return { sub, get };
         }
-        (signal as Signal)[SIGNAL][SIGNAL_ATOMSTATE] = atomState;
-        callback();
-      });
-    signal = {
-      [SIGNAL]: [subscribe, store[READ_ATOM](atom)],
-      THIS_IS_A_SIGNAL: true,
-    };
-    atomSignalCache.set(atom, signal);
-  }
-  return signal as Signal;
-};
-const readSignal = (signal: Signal) => {
-  const atomState = signal[SIGNAL][SIGNAL_ATOMSTATE];
-  if ('e' in atomState) {
-    throw atomState.e; // read error
-  }
-  if ('p' in atomState) {
-    return use(atomState.p) as never; // read promise
-  }
-  if ('v' in atomState) {
-    return atomState.v;
-  }
-  throw new Error('no atom value');
+        return createSignal(sub, () => {
+          const obj = get() as any;
+          if (typeof obj[prop] === 'function') {
+            return obj[prop].bind(obj);
+          }
+          return obj[prop];
+        });
+      },
+      apply(_target, _thisArg, args) {
+        return createSignal(sub, () => {
+          const fn = get() as any;
+          return fn(...args);
+        });
+      },
+    },
+  );
+  return sig;
 };
 
-export const signal = (atom: DisplayableAtom, scope?: Scope): string => {
-  const ScopeContext = getScopeContext(scope);
-  const store: Store = use(ScopeContext).s;
-  return getSignal(store, atom) as Signal & string; // HACK lie type
+const storeCacheCache = new WeakMap<Store, WeakMap<Atom<unknown>, Signal>>();
+
+const getAtomSignal = (store: Store, atom: Atom<unknown>): Signal => {
+  let atomSignalCache = storeCacheCache.get(store);
+  if (!atomSignalCache) {
+    atomSignalCache = new WeakMap();
+    storeCacheCache.set(store, atomSignalCache);
+  }
+  let sig = atomSignalCache.get(atom);
+  if (!sig) {
+    const sub: Subscribe = (callback) => store.sub(atom, callback);
+    const get: GetValue = () => store.get(atom);
+    sig = createSignal(sub, get);
+    atomSignalCache.set(atom, sig);
+  }
+  return sig;
 };
+
+const subscribeSignal = (sig: Signal, callback: () => void) => {
+  return sig[SIGNAL].sub(callback);
+};
+
+const readSignal = (sig: Signal) => {
+  const value = sig[SIGNAL].get();
+  if (value instanceof Promise) {
+    // HACK this could violate the rule of using `use`.
+    return use(value);
+  }
+  return value;
+};
+
+export function signal<T>(atom: Atom<Promise<T>>, store?: Store): T;
+
+export function signal<T>(atom: Atom<T>, store?: Store): T;
+
+export function signal<T>(atom: Atom<T>, store = getDefaultStore()) {
+  return getAtomSignal(store, atom) as Signal & T; // HACK lie type
+}
 
 const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
   const [state, setState] = useState(list);
@@ -112,30 +134,30 @@ const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
 };
 
 const Rerenderer = ({
-  subs,
+  signals,
   render,
 }: {
-  subs: Subscribe[];
+  signals: Signal[];
   render: () => ReactNode;
 }): ReactNode => {
   const [, rerender] = useReducer((c) => c + 1, 0);
-  const memoedSubs = useMemoList(subs);
+  const memoedSignals = useMemoList(signals);
   useEffect(() => {
-    const unsubs = memoedSubs.map((sub) => sub(rerender));
+    const unsubs = memoedSignals.map((sig) => subscribeSignal(sig, rerender));
     return () => unsubs.forEach((unsub) => unsub());
-  }, [memoedSubs]);
+  }, [memoedSignals]);
   return render();
 };
 
-const findAllSignalSubs = (x: unknown): Subscribe[] => {
+const findAllSignals = (x: unknown): Signal[] => {
   if (isSignal(x)) {
-    return [x[SIGNAL][SIGNAL_SUBSCRIBE]];
+    return [x];
   }
   if (Array.isArray(x)) {
-    return x.flatMap(findAllSignalSubs);
+    return x.flatMap(findAllSignals);
   }
   if (typeof x === 'object' && x !== null) {
-    return Object.values(x).flatMap(findAllSignalSubs);
+    return Object.values(x).flatMap(findAllSignals);
   }
   return [];
 };
@@ -172,21 +194,21 @@ const fillAllSignalValues = <T>(x: T): T => {
 };
 
 export const createElement = ((type: any, props?: any, ...children: any[]) => {
-  const subsInChildren = children.flatMap((child) =>
-    isSignal(child) ? [child[SIGNAL][SIGNAL_SUBSCRIBE]] : [],
+  const signalsInChildren = children.flatMap((child) =>
+    isSignal(child) ? [child] : [],
   );
-  const subsInProps = findAllSignalSubs(props);
-  if (!subsInChildren.length && !subsInProps.length) {
+  const signalsInProps = findAllSignals(props);
+  if (!signalsInChildren.length && !signalsInProps.length) {
     return createElementOrig(type, props, ...children);
   }
   const getChildren = () =>
-    subsInChildren.length
+    signalsInChildren.length
       ? children.map((child) => (isSignal(child) ? readSignal(child) : child))
       : children;
   const getProps = () =>
-    subsInProps.length ? fillAllSignalValues(props) : props;
+    signalsInProps.length ? fillAllSignalValues(props) : props;
   return createElementOrig(Rerenderer as any, {
-    subs: [...subsInChildren, ...subsInProps],
+    signals: [...signalsInChildren, ...signalsInProps],
     render: () => createElementOrig(type, getProps(), ...getChildren()),
   });
 }) as typeof createElementOrig;
