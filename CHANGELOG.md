@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.4.0] - 2022-12-30
 ### Changed
 - feat: use $ instead of signal as exported function name #3
 
