@@ -1,1 +1,1 @@
-export { signal, createElement } from './signal';
+export { $, createElement } from './signal';
