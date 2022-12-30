@@ -5,7 +5,7 @@ import type { FormEvent } from 'react';
 import { atom } from 'jotai/vanilla';
 import { useAtom, useSetAtom } from 'jotai/react';
 import type { PrimitiveAtom } from 'jotai/vanilla';
-import { signal } from 'jotai-signal';
+import { $ } from 'jotai-signal';
 
 const createRandomColor = () => `hsl(${Math.random() * 360}deg,100%,50%)`;
 
@@ -42,17 +42,17 @@ const TodoItem = memo(({ todoAtom, remove }: TodoItemProps) => {
     <div style={{ backgroundColor: createRandomColor() }}>
       <input
         type="checkbox"
-        checked={signal(todoAtom).completed}
+        checked={$(todoAtom).completed}
         onChange={toggleCompleted}
       />
       <span
         style={{
-          textDecoration: signal(
+          textDecoration: $(
             atom((get) => (get(todoAtom).completed ? 'line-through' : '')),
           ),
         }}
       >
-        {signal(todoAtom).title}
+        {$(todoAtom).title}
       </span>
       <button type="button" onClick={() => remove(todoAtom)}>
         Remove
@@ -86,7 +86,7 @@ type FilteredProps = {
 };
 const Filtered = ({ remove }: FilteredProps) => (
   <div style={{ padding: 30, backgroundColor: createRandomColor() }}>
-    {signal(filteredTodoAtomsAtom).map((todoAtom) => (
+    {$(filteredTodoAtomsAtom).map((todoAtom) => (
       <TodoItem key={`${todoAtom}`} todoAtom={todoAtom} remove={remove} />
     ))}
   </div>

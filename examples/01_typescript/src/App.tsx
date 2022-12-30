@@ -2,15 +2,15 @@
 
 import { atom } from 'jotai/vanilla';
 import { useAtom, useSetAtom } from 'jotai/react';
-import { signal } from 'jotai-signal';
+import { $ } from 'jotai-signal';
 
 const countAtom = atom(0);
 
 const CounterWithSignal = () => {
   return (
     <div>
-      <h1>With signal(atom)</h1>
-      Count: {signal(countAtom)} ({Math.random()})
+      <h1>With $(atom)</h1>
+      Count: {$(countAtom)} ({Math.random()})
     </div>
   );
 };

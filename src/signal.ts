@@ -113,11 +113,11 @@ const readSignal = (sig: Signal) => {
   return value;
 };
 
-export function signal<T>(atom: Atom<Promise<T>>, store?: Store): T;
+export function $<T>(atom: Atom<Promise<T>>, store?: Store): T;
 
-export function signal<T>(atom: Atom<T>, store?: Store): T;
+export function $<T>(atom: Atom<T>, store?: Store): T;
 
-export function signal<T>(atom: Atom<T>, store = getDefaultStore()) {
+export function $<T>(atom: Atom<T>, store = getDefaultStore()) {
   return getAtomSignal(store, atom) as Signal & T; // HACK lie type
 }
 

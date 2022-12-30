@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { atom } from 'jotai/vanilla';
 import { useAtom } from 'jotai/react';
-import { signal } from 'jotai-signal';
+import { $ } from 'jotai-signal';
 
 const idAtom = atom(1);
 const userAtom = atom(async (get) => {
@@ -17,7 +17,7 @@ const createRandomColor = () => `#${Math.random().toString(16).slice(-6)}`;
 const UserWithSignal = () => {
   return (
     <div style={{ backgroundColor: createRandomColor() }}>
-      User: {signal(userAtom)}
+      User: {$(userAtom)}
     </div>
   );
 };
@@ -47,7 +47,7 @@ const Controls = () => {
 const App = () => (
   <>
     <Controls />
-    <h1>With signal(atom)</h1>
+    <h1>With $(atom)</h1>
     <Suspense fallback="Loading...">
       <UserWithSignal />
     </Suspense>
