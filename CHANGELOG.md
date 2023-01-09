@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.5.0] - 2023-01-09
 ### Changed
 - Use create react signals #4
 
