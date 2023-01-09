@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- feat: value prop in signal #5
 
 ## [0.5.0] - 2023-01-09
 ### Changed
