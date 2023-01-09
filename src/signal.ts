@@ -1,14 +1,15 @@
 /// <reference types="react/experimental" />
 
-import ReactExports, {
-  createElement as createElementOrig,
-  useEffect,
-  useReducer,
-  useState,
-} from 'react';
-import type { ReactNode } from 'react';
+import ReactExports from 'react';
 import { getDefaultStore } from 'jotai/vanilla';
-import type { Atom } from 'jotai/vanilla';
+import type { Atom, WritableAtom } from 'jotai/vanilla';
+import { createReactSignals } from 'create-react-signals';
+
+type AnyAtom = Atom<unknown>;
+type AnyWritableAtom = WritableAtom<unknown, unknown[], unknown>;
+
+const isActuallyWritableAtom = (atom: AnyAtom): atom is AnyWritableAtom =>
+  !!(atom as AnyWritableAtom).write;
 
 const use =
   ReactExports.use ||
@@ -46,165 +47,32 @@ type Store = ReturnType<typeof getDefaultStore>;
 type Unsubscribe = () => void;
 type Subscribe = (callback: () => void) => Unsubscribe;
 type GetValue = () => unknown;
+type SetValue = (path: unknown[], value: unknown) => void;
 
-const SIGNAL = Symbol('JOTAI_SIGNAL');
-type Signal = {
-  [SIGNAL]: { sub: Subscribe; get: GetValue };
-};
-const isSignal = (x: unknown): x is Signal => !!(x as any)?.[SIGNAL];
-
-const createSignal = (sub: Subscribe, get: GetValue): Signal => {
-  const sig = new Proxy(
-    (() => {
-      // empty
-    }) as any,
-    {
-      get(_target, prop) {
-        if (prop === SIGNAL) {
-          return { sub, get };
-        }
-        return createSignal(sub, () => {
-          const obj = get() as any;
-          if (typeof obj[prop] === 'function') {
-            return obj[prop].bind(obj);
-          }
-          return obj[prop];
-        });
-      },
-      apply(_target, _thisArg, args) {
-        return createSignal(sub, () => {
-          const fn = get() as any;
-          return fn(...args);
-        });
-      },
-    },
-  );
-  return sig;
+const createSignal = (
+  atom: AnyAtom,
+  store: Store,
+): [Subscribe, GetValue, SetValue] => {
+  const sub: Subscribe = (callback) => store.sub(atom, callback);
+  const get: GetValue = () => store.get(atom);
+  const set: SetValue = (path, value) => {
+    if (!isActuallyWritableAtom(atom)) {
+      throw new Error('Not writable atom');
+    }
+    if (path.length !== 0) {
+      throw new Error('Updating subpath is not supported.');
+    }
+    store.set(atom, value);
+  };
+  return [sub, get, set];
 };
 
-const storeCacheCache = new WeakMap<Store, WeakMap<Atom<unknown>, Signal>>();
+const { getSignal, createElement } = createReactSignals(createSignal, use);
 
-const getAtomSignal = (store: Store, atom: Atom<unknown>): Signal => {
-  let atomSignalCache = storeCacheCache.get(store);
-  if (!atomSignalCache) {
-    atomSignalCache = new WeakMap();
-    storeCacheCache.set(store, atomSignalCache);
-  }
-  let sig = atomSignalCache.get(atom);
-  if (!sig) {
-    const sub: Subscribe = (callback) => store.sub(atom, callback);
-    const get: GetValue = () => store.get(atom);
-    sig = createSignal(sub, get);
-    atomSignalCache.set(atom, sig);
-  }
-  return sig;
-};
+export { createElement };
 
-const subscribeSignal = (sig: Signal, callback: () => void) => {
-  return sig[SIGNAL].sub(callback);
-};
+export function $<T>(atom: Atom<T>, store?: Store): Awaited<T>;
 
-const readSignal = (sig: Signal) => {
-  const value = sig[SIGNAL].get();
-  if (value instanceof Promise) {
-    // HACK this could violate the rule of using `use`.
-    return use(value);
-  }
-  return value;
-};
-
-export function $<T>(atom: Atom<T>, store = getDefaultStore()): Awaited<T> {
-  return getAtomSignal(store, atom) as Signal & Awaited<T>; // HACK lie type
+export function $<T>(atom: Atom<T>, store = getDefaultStore()) {
+  return getSignal(atom, store);
 }
-
-const useMemoList = <T>(list: T[], compareFn = (a: T, b: T) => a === b) => {
-  const [state, setState] = useState(list);
-  const listChanged =
-    list.length !== state.length ||
-    list.some((arg, index) => !compareFn(arg, state[index] as T));
-  if (listChanged) {
-    // schedule update, triggers re-render
-    setState(list);
-  }
-  return listChanged ? list : state;
-};
-
-const Rerenderer = ({
-  signals,
-  render,
-}: {
-  signals: Signal[];
-  render: () => ReactNode;
-}): ReactNode => {
-  const [, rerender] = useReducer((c) => c + 1, 0);
-  const memoedSignals = useMemoList(signals);
-  useEffect(() => {
-    const unsubs = memoedSignals.map((sig) => subscribeSignal(sig, rerender));
-    return () => unsubs.forEach((unsub) => unsub());
-  }, [memoedSignals]);
-  return render();
-};
-
-const findAllSignals = (x: unknown): Signal[] => {
-  if (isSignal(x)) {
-    return [x];
-  }
-  if (Array.isArray(x)) {
-    return x.flatMap(findAllSignals);
-  }
-  if (typeof x === 'object' && x !== null) {
-    return Object.values(x).flatMap(findAllSignals);
-  }
-  return [];
-};
-
-const fillAllSignalValues = <T>(x: T): T => {
-  if (isSignal(x)) {
-    return readSignal(x) as T;
-  }
-  if (Array.isArray(x)) {
-    let changed = false;
-    const x2 = x.map((item) => {
-      const item2 = fillAllSignalValues(item);
-      if (item !== item2) {
-        changed = true; // HACK side effect
-      }
-      return item2;
-    });
-    return changed ? (x2 as typeof x) : x;
-  }
-  if (typeof x === 'object' && x !== null) {
-    let changed = false;
-    const x2 = Object.fromEntries(
-      Object.entries(x).map(([key, value]) => {
-        const value2 = fillAllSignalValues(value);
-        if (value !== value2) {
-          changed = true; // HACK side effect
-        }
-        return [key, value2];
-      }),
-    );
-    return changed ? (x2 as typeof x) : x;
-  }
-  return x;
-};
-
-export const createElement = ((type: any, props?: any, ...children: any[]) => {
-  const signalsInChildren = children.flatMap((child) =>
-    isSignal(child) ? [child] : [],
-  );
-  const signalsInProps = findAllSignals(props);
-  if (!signalsInChildren.length && !signalsInProps.length) {
-    return createElementOrig(type, props, ...children);
-  }
-  const getChildren = () =>
-    signalsInChildren.length
-      ? children.map((child) => (isSignal(child) ? readSignal(child) : child))
-      : children;
-  const getProps = () =>
-    signalsInProps.length ? fillAllSignalValues(props) : props;
-  return createElementOrig(Rerenderer as any, {
-    signals: [...signalsInChildren, ...signalsInProps],
-    render: () => createElementOrig(type, getProps(), ...getChildren()),
-  });
-}) as typeof createElementOrig;
