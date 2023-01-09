@@ -2780,10 +2780,10 @@ cosmiconfig@^7.0.0:
     path-type "^4.0.0"
     yaml "^1.10.0"
 
-create-react-signals@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/create-react-signals/-/create-react-signals-0.1.0.tgz#770e371e560300c5c195a023117faf83dbb93fe3"
-  integrity sha512-BcQrOrCRpMqD2LCQeYklZwQTxB2pVyDRRADGJPEuXeipknmt6TkyTqKopsniFwgIITD1R++TIy5NEx9g7yO28w==
+create-react-signals@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/create-react-signals/-/create-react-signals-0.2.0.tgz#beebe2c9ac96eab52bb70edbdbd297ae2530fd34"
+  integrity sha512-uUx1+A1lQtbEYqRxxjqilHp//tBACIWpLzLEE9n2ZuXCHd1jGjOgeBmkU6Fmr1HQBs+pZIqfRZFURnf1W0qe6g==
 
 cross-spawn@^6.0.5:
   version "6.0.5"

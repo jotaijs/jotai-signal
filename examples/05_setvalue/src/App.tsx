@@ -6,9 +6,9 @@ import { $ } from 'jotai-signal';
 const countAtom = atom(0);
 
 const inc = () => {
-  const prevCount = ($(countAtom) as any)();
+  const prevCount = $(countAtom).value;
   const nextCount = prevCount + 1;
-  ($(countAtom) as any)(nextCount);
+  $(countAtom).value = nextCount;
 };
 
 const CounterWithSignal = () => {
