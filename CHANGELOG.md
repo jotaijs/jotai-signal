@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.7.0] - 2023-01-21
 ### Added
 - feat: uncontrolled when possible #6
 
