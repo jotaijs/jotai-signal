@@ -65,7 +65,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "create-react-signals": "0.5.0"
+    "create-react-signals": "https://pkg.csb.dev/dai-shi/create-react-signals/commit/03b06dfe/create-react-signals"
   },
   "devDependencies": {
     "@types/jest": "^29.2.6",

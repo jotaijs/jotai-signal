@@ -15,7 +15,12 @@ const CounterWithSignal = () => {
   return (
     <div>
       <h1>With $(atom)</h1>
-      Count: {$(countAtom)} ({Math.random()})
+      <div>
+        Count: {$(countAtom)} ({Math.random()})
+      </div>
+      <div>
+        Count: {$(countAtom)} ({Math.random()})
+      </div>
     </div>
   );
 };
