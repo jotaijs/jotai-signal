@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- update create-react-signals v0.6.0 #7
 
 ## [0.7.0] - 2023-01-21
 ### Added
