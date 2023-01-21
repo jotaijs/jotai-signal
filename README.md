@@ -12,3 +12,5 @@
 - [v0.3.0 announcement](https://twitter.com/dai_shi/status/1604845161967546368)
 - [v0.4.0 announcement](https://twitter.com/dai_shi/status/1608767092135976961)
 - [v0.5.0 announcement](https://twitter.com/dai_shi/status/1612278446750846976)
+- [v0.6.0 announcement](https://twitter.com/dai_shi/status/1612426796603158528)
+- [v0.7.0 announcement](https://twitter.com/dai_shi/status/1616639032418799619)
