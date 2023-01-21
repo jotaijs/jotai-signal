@@ -83,7 +83,7 @@ const { getSignal, createElement } = createReactSignals(
 export { createElement };
 
 type AttachValue<T> = T & { value: T } & {
-  [K in keyof T]: AttachValue<T[K]>;
+  readonly [K in keyof T]: AttachValue<T[K]>;
 };
 
 export function $<T>(atom: Atom<T>, store?: Store): AttachValue<Awaited<T>>;
