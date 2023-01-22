@@ -52,7 +52,7 @@ type SetValue = (path: unknown[], value: unknown) => void;
 const createSignal = (
   atom: AnyAtom,
   store: Store,
-): [Subscribe, GetValue, SetValue] => {
+): readonly [Subscribe, GetValue, SetValue] => {
   const sub: Subscribe = (callback) => store.sub(atom, callback);
   const get: GetValue = () => store.get(atom);
   const set: SetValue = (path, value) => {
