@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.7.2] - 2023-01-22
 ### Changed
 - fix: infinite loop in some cases #8
 
