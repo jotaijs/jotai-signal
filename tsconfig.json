@@ -1,23 +1,21 @@
 {
   "compilerOptions": {
     "strict": true,
-    "target": "es5",
-    "esModuleInterop": true,
+    "target": "esnext",
     "downlevelIteration": true,
+    "esModuleInterop": true,
     "module": "es2015",
     "moduleResolution": "node",
-    "jsx": "react-jsx",
     "allowJs": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "sourceMap": true,
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "jotai-signal": ["./src"],
       "jotai-signal/jsx-runtime": ["./src/jsx-runtime"]
-    },
-    "outDir": "./dist"
+    }
   }
 }
