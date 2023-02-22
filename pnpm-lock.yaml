@@ -32,7 +32,7 @@ specifiers:
   webpack-dev-server: ^4.11.1
 
 dependencies:
-  create-react-signals: '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals_react@18.2.0'
+  create-react-signals: '@pkg.csb.dev/dai-shi/create-react-signals/commit/cf9c93cf/create-react-signals_react@18.2.0'
 
 devDependencies:
   '@types/jest': 29.4.0
@@ -8480,11 +8480,11 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals_react@18.2.0':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals}
-    id: '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals'
+  '@pkg.csb.dev/dai-shi/create-react-signals/commit/cf9c93cf/create-react-signals_react@18.2.0':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/create-react-signals/commit/cf9c93cf/create-react-signals}
+    id: '@pkg.csb.dev/dai-shi/create-react-signals/commit/cf9c93cf/create-react-signals'
     name: create-react-signals
-    version: 0.6.2
+    version: 0.7.0-wip.0
     peerDependencies:
       react: '>=17.0.0'
     dependencies:
