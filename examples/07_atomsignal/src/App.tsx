@@ -1,8 +1,10 @@
-import React from 'react';
+import jsxRuntime from 'react/jsx-runtime';
 import { useSetAtom } from 'jotai/react';
-import { atomWithSignal, inject } from 'jotai-signal';
+import { atomWithSignal } from 'jotai-signal';
+import { jsx, jsxs } from 'jotai-signal/jsx-runtime';
 
-React.createElement = inject(React.createElement);
+(jsxRuntime as any).jsx = jsx;
+(jsxRuntime as any).jsxs = jsxs;
 
 const count = atomWithSignal(0);
 const doubled = atomWithSignal((get: any) => get(count) * 2);

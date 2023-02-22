@@ -11,4 +11,3 @@ export const jsx = (type: any, props: any, key: any) => {
 };
 
 export const jsxs = jsx;
-export const jsxDEV = jsx;

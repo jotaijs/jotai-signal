@@ -1,10 +1,9 @@
-import { $, atomWithSignal, createElement, inject } from '../src/index';
+import { $, atomWithSignal, createElement } from '../src/index';
 
 describe('basic spec', () => {
   it('should export functions', () => {
     expect($).toBeDefined();
     expect(atomWithSignal).toBeDefined();
     expect(createElement).toBeDefined();
-    expect(inject).toBeDefined();
   });
 });

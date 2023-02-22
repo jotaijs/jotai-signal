@@ -96,8 +96,6 @@ const { getSignal, inject } = createReactSignals(
   use,
 );
 
-export { inject };
-
 export const createElement = inject(ReactExports.createElement);
 
 type AttachValue<T> = T & { value: T };
