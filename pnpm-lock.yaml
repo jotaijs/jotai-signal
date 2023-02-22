@@ -7,7 +7,7 @@ specifiers:
   '@types/react-dom': ^18.0.10
   '@typescript-eslint/eslint-plugin': ^5.49.0
   '@typescript-eslint/parser': ^5.49.0
-  create-react-signals: 0.6.2
+  create-react-signals: https://pkg.csb.dev/dai-shi/create-react-signals/commit/cf9c93cf/create-react-signals
   eslint: ^8.32.0
   eslint-config-airbnb: ^19.0.4
   eslint-config-prettier: ^8.6.0
@@ -32,7 +32,7 @@ specifiers:
   webpack-dev-server: ^4.11.1
 
 dependencies:
-  create-react-signals: 0.6.2_react@18.2.0
+  create-react-signals: '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals_react@18.2.0'
 
 devDependencies:
   '@types/jest': 29.4.0
@@ -3173,14 +3173,6 @@ packages:
       path-type: 4.0.0
       yaml: 1.10.2
     dev: true
-
-  /create-react-signals/0.6.2_react@18.2.0:
-    resolution: {integrity: sha512-p+I3k2LbTaZapE/ZYhCPi4P+n4TljdqiT6Q6y+qVKwLels2FNywlck8mrx94AgcMK+WmQliywzDAZ1woQtOL9g==}
-    peerDependencies:
-      react: '>=17.0.0'
-    dependencies:
-      react: 18.2.0
-    dev: false
 
   /cross-spawn/6.0.5:
     resolution: {integrity: sha512-eTVLrBSt7fjbDygz805pMnstIs2VTBNkRm0qxZd+M7A5XDdxVRWO5MxGBXZhjY4cqLYLdtrGqRf8mBPmzwSpWQ==}
@@ -8487,3 +8479,14 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals_react@18.2.0':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals}
+    id: '@pkg.csb.dev/dai-shi/create-react-signals/commit/0552036f/create-react-signals'
+    name: create-react-signals
+    version: 0.6.2
+    peerDependencies:
+      react: '>=17.0.0'
+    dependencies:
+      react: 18.2.0
+    dev: false

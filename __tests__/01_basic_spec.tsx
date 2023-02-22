@@ -1,9 +1,10 @@
-import { $, getValueProp, createElement } from '../src/index';
+import { $, atomWithSignal, createElement, inject } from '../src/index';
 
 describe('basic spec', () => {
   it('should export functions', () => {
     expect($).toBeDefined();
-    expect(getValueProp).toBeDefined();
+    expect(atomWithSignal).toBeDefined();
     expect(createElement).toBeDefined();
+    expect(inject).toBeDefined();
   });
 });
