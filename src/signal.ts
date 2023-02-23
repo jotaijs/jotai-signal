@@ -111,21 +111,21 @@ export function $<T>(anAtom: Atom<T>, store = getDefaultStore()) {
   return getSignal(anAtom, store);
 }
 
-// atomWithSignal util
+// atomSignal util
 
-export function atomWithSignal<Value, Args extends unknown[], Result>(
+export function atomSignal<Value, Args extends unknown[], Result>(
   read: Read<Value, SetAtom<Args, Result>>,
   write: Write<Args, Result>,
   store?: Store,
 ): WritableAtom<Value, Args, Result> &
   (Value extends Primitives ? AttachValue<Value> : never);
 
-export function atomWithSignal<Value>(
+export function atomSignal<Value>(
   read: Read<Value>,
   store?: Store,
 ): Atom<Value> & (Value extends Primitives ? AttachValue<Value> : never);
 
-export function atomWithSignal<Value, Args extends unknown[], Result>(
+export function atomSignal<Value, Args extends unknown[], Result>(
   initialValue: Value,
   write: Write<Args, Result>,
   store?: Store,
@@ -133,7 +133,7 @@ export function atomWithSignal<Value, Args extends unknown[], Result>(
   WithInitialValue<Value> &
   (Value extends Primitives ? AttachValue<Value> : never);
 
-export function atomWithSignal<Value>(
+export function atomSignal<Value>(
   initialValue: Value,
   write?: never,
   store?: Store,
@@ -141,8 +141,8 @@ export function atomWithSignal<Value>(
   WithInitialValue<Value> &
   (Value extends Primitives ? AttachValue<Value> : never);
 
-export function atomWithSignal(read: any, write?: any, store?: any) {
-  const a = atom(read, write);
-  const s = $(a as any, store);
-  return Object.assign(s, a) as any;
+export function atomSignal(read: any, write?: any, store?: any) {
+  const anAtom = atom(read, write);
+  const aSignal = $(anAtom as any, store);
+  return Object.assign(aSignal, anAtom) as any;
 }
