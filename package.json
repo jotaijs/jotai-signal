@@ -5,7 +5,7 @@
   "author": "Daishi Kato",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jotai-labs/jotai-signal.git"
+    "url": "https://github.com/jotaijs/jotai-signal.git"
   },
   "source": "./src/index.ts",
   "main": "./dist/index.umd.js",
