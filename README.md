@@ -15,3 +15,4 @@
 - [v0.6.0 announcement](https://twitter.com/dai_shi/status/1612426796603158528)
 - [v0.7.0 announcement](https://twitter.com/dai_shi/status/1616639032418799619)
 - [show&hide demo](https://twitter.com/dai_shi/status/1617001873302786048)
+- [atomSignal PoC](https://twitter.com/dai_shi/status/1629469352872517633)
