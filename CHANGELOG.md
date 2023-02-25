@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.8.0] - 2023-02-25
 ### Added
 - feat: atomSignal #11
 
