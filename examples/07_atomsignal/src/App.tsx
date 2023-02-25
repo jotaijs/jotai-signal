@@ -1,14 +1,7 @@
-import jsxRuntime from 'react/jsx-runtime';
-import jsxDevRuntime from 'react/jsx-dev-runtime';
+/** @jsxImportSource jotai-signal */
+
 import { useSetAtom } from 'jotai/react';
 import { atomSignal } from 'jotai-signal';
-import { jsx, jsxs } from 'jotai-signal/jsx-runtime';
-
-// This hack only works if jsxRuntime is CJS not ESM.
-(jsxRuntime as any).jsx = jsx;
-(jsxRuntime as any).jsxs = jsxs;
-(jsxDevRuntime as any).jsx = jsx;
-(jsxDevRuntime as any).jsxs = jsxs;
 
 const count = atomSignal(0);
 const doubled = atomSignal((get) => get(count) * 2);
