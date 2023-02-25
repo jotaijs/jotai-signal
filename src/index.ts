@@ -1,1 +1,1 @@
-export { $, getValueProp, createElement } from './signal';
+export { $, atomSignal, createElement } from './signal';

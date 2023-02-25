@@ -1,15 +1,36 @@
 /// <reference types="react/experimental" />
 
 import ReactExports from 'react';
-import { getDefaultStore } from 'jotai/vanilla';
-import type { Atom, WritableAtom } from 'jotai/vanilla';
+import { atom, getDefaultStore } from 'jotai/vanilla';
+import type {
+  Atom,
+  Getter,
+  PrimitiveAtom,
+  Setter,
+  WritableAtom,
+} from 'jotai/vanilla';
 import { createReactSignals } from 'create-react-signals';
 
 type AnyAtom = Atom<unknown>;
 type AnyWritableAtom = WritableAtom<unknown, unknown[], unknown>;
+type SetAtom<Args extends unknown[], Result> = <A extends Args>(
+  ...args: A
+) => Result;
+type Read<Value, SetSelf = never> = (
+  get: Getter,
+  options: { readonly signal: AbortSignal; readonly setSelf: SetSelf },
+) => Value;
+type Write<Args extends unknown[], Result> = (
+  get: Getter,
+  set: Setter,
+  ...args: Args
+) => Result;
+type WithInitialValue<Value> = {
+  init: Value;
+};
 
-const isActuallyWritableAtom = (atom: AnyAtom): atom is AnyWritableAtom =>
-  !!(atom as AnyWritableAtom).write;
+const isActuallyWritableAtom = (anAtom: AnyAtom): anAtom is AnyWritableAtom =>
+  !!(anAtom as AnyWritableAtom).write;
 
 const use =
   ReactExports.use ||
@@ -50,44 +71,78 @@ type GetValue = () => unknown;
 type SetValue = (path: unknown[], value: unknown) => void;
 
 const createSignal = (
-  atom: AnyAtom,
+  anAtom: AnyAtom,
   store: Store,
 ): readonly [Subscribe, GetValue, SetValue] => {
-  const sub: Subscribe = (callback) => store.sub(atom, callback);
-  const get: GetValue = () => store.get(atom);
+  const sub: Subscribe = (callback) => store.sub(anAtom, callback);
+  const get: GetValue = () => store.get(anAtom);
   const set: SetValue = (path, value) => {
-    if (!isActuallyWritableAtom(atom)) {
+    if (!isActuallyWritableAtom(anAtom)) {
       throw new Error('Not writable atom');
     }
     if (path.length !== 0) {
       throw new Error('Updating subpath is not supported.');
     }
-    store.set(atom, value);
+    store.set(anAtom, value);
   };
   return [sub, get, set];
 };
 
-const VALUE_PROP = Symbol();
-
-export const getValueProp = <T extends { value: unknown }>(
-  x: AttachValue<T>,
-): AttachValue<T['value']> => (x as any)[VALUE_PROP];
-
-const { getSignal, createElement } = createReactSignals(
+const { getSignal, inject } = createReactSignals(
   createSignal,
+  false,
   'value',
-  VALUE_PROP,
+  undefined,
   use,
 );
 
-export { createElement };
+export const createElement = inject(ReactExports.createElement);
 
-type AttachValue<T> = T & { value: T } & {
-  readonly [K in keyof T]: AttachValue<T[K]>;
-};
+type AttachValue<T> = T & { value: T };
 
-export function $<T>(atom: Atom<T>, store?: Store): AttachValue<Awaited<T>>;
+type Primitives = string | number | boolean | null | undefined;
 
-export function $<T>(atom: Atom<T>, store = getDefaultStore()) {
-  return getSignal(atom, store);
+export function $<T extends Primitives | Promise<Primitives>>(
+  anAtom: Atom<T>,
+  store?: Store,
+): AttachValue<Awaited<T>>;
+
+export function $<T>(anAtom: Atom<T>, store = getDefaultStore()) {
+  return getSignal(anAtom, store);
+}
+
+// atomSignal util
+
+export function atomSignal<Value, Args extends unknown[], Result>(
+  read: Read<Value, SetAtom<Args, Result>>,
+  write: Write<Args, Result>,
+  store?: Store,
+): WritableAtom<Value, Args, Result> &
+  (Value extends Primitives ? AttachValue<Value> : never);
+
+export function atomSignal<Value>(
+  read: Read<Value>,
+  store?: Store,
+): Atom<Value> & (Value extends Primitives ? AttachValue<Value> : never);
+
+export function atomSignal<Value, Args extends unknown[], Result>(
+  initialValue: Value,
+  write: Write<Args, Result>,
+  store?: Store,
+): WritableAtom<Value, Args, Result> &
+  WithInitialValue<Value> &
+  (Value extends Primitives ? AttachValue<Value> : never);
+
+export function atomSignal<Value>(
+  initialValue: Value,
+  write?: never,
+  store?: Store,
+): PrimitiveAtom<Value> &
+  WithInitialValue<Value> &
+  (Value extends Primitives ? AttachValue<Value> : never);
+
+export function atomSignal(read: any, write?: any, store?: any) {
+  const anAtom = atom(read, write);
+  const aSignal = $(anAtom as any, store);
+  return Object.assign(aSignal, anAtom) as any;
 }

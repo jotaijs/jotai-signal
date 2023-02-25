@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import type { FormEvent } from 'react';
 import { atom } from 'jotai/vanilla';
-import { useAtom, useSetAtom } from 'jotai/react';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai/react';
 import type { PrimitiveAtom } from 'jotai/vanilla';
 import { $ } from 'jotai-signal';
 
@@ -42,7 +42,7 @@ const TodoItem = memo(({ todoAtom, remove }: TodoItemProps) => {
     <div style={{ backgroundColor: createRandomColor() }}>
       <input
         type="checkbox"
-        checked={$(todoAtom).completed}
+        checked={$(atom((get) => get(todoAtom).completed))}
         onChange={toggleCompleted}
       />
       <span
@@ -52,7 +52,7 @@ const TodoItem = memo(({ todoAtom, remove }: TodoItemProps) => {
           ),
         }}
       >
-        {$(todoAtom).title}
+        {$(atom((get) => get(todoAtom).title))}
       </span>
       <button type="button" onClick={() => remove(todoAtom)}>
         Remove
@@ -86,7 +86,7 @@ type FilteredProps = {
 };
 const Filtered = ({ remove }: FilteredProps) => (
   <div style={{ padding: 30, backgroundColor: createRandomColor() }}>
-    {$(filteredTodoAtomsAtom).map((todoAtom) => (
+    {useAtomValue(filteredTodoAtomsAtom).map((todoAtom) => (
       <TodoItem key={`${todoAtom}`} todoAtom={todoAtom} remove={remove} />
     ))}
   </div>

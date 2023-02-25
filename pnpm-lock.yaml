@@ -7,7 +7,7 @@ specifiers:
   '@types/react-dom': ^18.0.10
   '@typescript-eslint/eslint-plugin': ^5.49.0
   '@typescript-eslint/parser': ^5.49.0
-  create-react-signals: 0.6.2
+  create-react-signals: 0.7.0
   eslint: ^8.32.0
   eslint-config-airbnb: ^19.0.4
   eslint-config-prettier: ^8.6.0
@@ -32,7 +32,7 @@ specifiers:
   webpack-dev-server: ^4.11.1
 
 dependencies:
-  create-react-signals: 0.6.2_react@18.2.0
+  create-react-signals: 0.7.0_react@18.2.0
 
 devDependencies:
   '@types/jest': 29.4.0
@@ -3174,8 +3174,8 @@ packages:
       yaml: 1.10.2
     dev: true
 
-  /create-react-signals/0.6.2_react@18.2.0:
-    resolution: {integrity: sha512-p+I3k2LbTaZapE/ZYhCPi4P+n4TljdqiT6Q6y+qVKwLels2FNywlck8mrx94AgcMK+WmQliywzDAZ1woQtOL9g==}
+  /create-react-signals/0.7.0_react@18.2.0:
+    resolution: {integrity: sha512-DZmZTMExl9nyX/5PUTsPxw7w9HuI538h5ppxp85JXs/SMgABqDGJ5dVtuM0MLDVWyUmJZMx92f8QTnn3fP7yig==}
     peerDependencies:
       react: '>=17.0.0'
     dependencies:
