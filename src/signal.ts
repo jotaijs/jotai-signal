@@ -96,6 +96,7 @@ const { getSignal, inject } = createReactSignals(
   use,
 );
 
+// eslint-disable-next-line import/no-named-as-default-member
 export const createElement = inject(ReactExports.createElement);
 
 type AttachValue<T> = T & { value: T };
@@ -141,8 +142,15 @@ export function atomSignal<Value>(
   WithInitialValue<Value> &
   (Value extends Primitives ? AttachValue<Value> : never);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function atomSignal(read: any, write?: any, store?: any) {
-  const anAtom = atom(read, write);
+  const baseAtom = atom(read, write);
+  const anAtom = atom(
+    (get) => get(baseAtom),
+    (_get, set, ...args) => set(baseAtom, ...args),
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const aSignal = $(anAtom as any, store);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Object.assign(aSignal, anAtom) as any;
 }

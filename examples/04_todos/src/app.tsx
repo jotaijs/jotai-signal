@@ -33,10 +33,10 @@ type TodoItemProps = {
   todoAtom: PrimitiveAtom<Todo>;
   remove: RemoveFn;
 };
-const TodoItem = memo(({ todoAtom, remove }: TodoItemProps) => {
+const TodoItem = memo(function TodoItem({ todoAtom, remove }: TodoItemProps) {
   const setItem = useSetAtom(todoAtom);
   const toggleCompleted = () => {
-    setItem((props) => ({ ...props, completed: !props.completed }));
+    setItem((values) => ({ ...values, completed: !values.completed }));
   };
   return (
     <div style={{ backgroundColor: createRandomColor() }}>

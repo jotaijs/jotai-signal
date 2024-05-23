@@ -1,21 +1,20 @@
 {
   "compilerOptions": {
     "strict": true,
-    "target": "esnext",
-    "downlevelIteration": true,
+    "target": "es2018",
     "esModuleInterop": true,
-    "module": "es2015",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "skipLibCheck": true,
     "allowJs": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "jotai-signal": ["./src"],
-      "jotai-signal/jsx-runtime": ["./src/jsx-runtime"]
+      "jotai-signal": ["./src/index.js"],
+      "jotai-signal/jsx-runtime": ["./src/jsx-runtime.js"]
     }
-  }
+  },
+  "exclude": ["dist", "examples"]
 }
