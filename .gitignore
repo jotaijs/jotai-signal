@@ -2,4 +2,3 @@
 *.swp
 node_modules
 /dist
-/jsx-runtime.d.ts

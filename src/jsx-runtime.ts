@@ -2,6 +2,7 @@ import { createElement } from 'jotai-signal';
 
 export { Fragment } from 'react';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const jsx = (type: any, props: any, key: any) => {
   const { children, ...rest } = props || {};
   if (Array.isArray(children)) {
