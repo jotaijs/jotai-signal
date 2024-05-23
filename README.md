@@ -16,3 +16,4 @@
 - [v0.7.0 announcement](https://twitter.com/dai_shi/status/1616639032418799619)
 - [show&hide demo](https://twitter.com/dai_shi/status/1617001873302786048)
 - [atomSignal PoC](https://twitter.com/dai_shi/status/1629469352872517633)
+- [v0.9.0 announcement](https://x.com/dai_shi/status/1793640805972009276)
