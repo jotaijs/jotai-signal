@@ -8,7 +8,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: DerYeger/pnpm-setup-action@master
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
       - run: npm test
