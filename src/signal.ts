@@ -96,7 +96,6 @@ const { getSignal, inject } = createReactSignals(
   use,
 );
 
-// eslint-disable-next-line import/no-named-as-default-member
 export const createElement = inject(ReactExports.createElement);
 
 type AttachValue<T> = T & { value: T };

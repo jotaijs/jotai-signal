@@ -12,8 +12,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "jotai-signal": ["./src/index.js"],
-      "jotai-signal/jsx-runtime": ["./src/jsx-runtime.js"]
+      "jotai-signal": ["./src/index.ts"],
+      "jotai-signal/jsx-runtime": ["./src/jsx-runtime.ts"]
     }
   },
   "exclude": ["dist", "examples"]
